@@ -90,19 +90,33 @@ sub new {
     my $class = shift;
     my %options = @_;
 
-    my $SIDE_WIDTH = 10;
+    my $x     = $options{x}     || 10;
+    my $y     = $options{y}     || 10;
+    my $size  = $options{size}  || 30;
+    my $color = $options{color} || 'yellow';
 
-    my $circle = $canvas->createOval(
-        $options{x}, $options{y},
-        $options{x} + $options{size}, $options{y} + $options{size},
-        -fill => $options{color},
+    my $circleID = $canvas->createOval(
+        $x, $y,
+        $x + $size, $y + $size,
+        -fill => $color,
     );
 
-    my $this       = bless {
-        'circle'     => $circle,
+    my $this = bless {
+        'id' => $circleID,
     }, $class;
 
     return $this;
+}
+
+sub move {
+    my $self = shift;
+    my %options = @_;
+
+    my $x     = $options{x}     || 10;
+    my $y     = $options{y}     || 10;
+print "id is $self->{id}\n";
+print "canvas is $canvas\n";
+    my $tick_id = $MW->after( 2000, sub { $canvas->move($self->{id}, $x, $y) } );
 }
 
 

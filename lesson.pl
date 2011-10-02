@@ -6,20 +6,26 @@ use strict;
 
 use lib '.';
 use plwgdk_base;
-use Moose;
 
-my $circle = Circle->new(
+my $circle = Circle->new();
+
+my $circle2 = Circle->new(
     x     => 50,
     y     => 90,
     size  => 40,
     color => 'red',
 );
 
-my $circle2 = Circle->new(
+my $circle3 = Circle->new(
     x     => 90,
     y     => 190,
     size  => 20,
     color => 'pink',
+);
+
+$circle->move(
+    x     => 90,
+    y     => 190,
 );
 
 MainLoop;
