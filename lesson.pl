@@ -23,10 +23,11 @@ sub setup {
     );
 
     $thingies{circle3} = Circle->new(
-        x     => 250,
-        y     => 250,
-        size  => 50,
-        color => 'purple',
+        x         => 250,
+        y         => 250,
+        size      => 50,
+        color     => 'purple',
+        is_bouncy => 1,
     );
     $thingies{circle1}->set_in_motion();
     $thingies{circle2}->set_in_motion();
