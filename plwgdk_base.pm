@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl
 
-# For teaching video games
+# Documentation at end
 
 use 5.010001;
 use strict;
@@ -17,8 +17,10 @@ our $SCR_WIDTH  = 500;
 our $SCR_HEIGHT = 500;
 our $FONT       = 'Arial 8 normal';
 
+my $TICK_DELAY = 15;
+
 my $MW = MainWindow->new;
-$MW->title("Lesson");
+$MW->title('Lesson');
 
 my $frame = $MW->Frame(
     -relief      => 'ridge',
@@ -30,45 +32,46 @@ my $frame = $MW->Frame(
   );
 
 my $menu = $frame->Menubutton(
-    -text      => "File",
+    -text      => 'File',
     -underline => 0,
     -font      => $FONT,
     -tearoff   => 0,
     -menuitems => [
         [
-            'command'  => " New (n)",
+            'command'  => ' New (n)',
             -underline => 1,
             -font      => $FONT,
             -command   => \&startGame
         ],
         [
-            'command'  => " Options",
+            'command'  => ' Options',
             -underline => 1,
             -font      => $FONT,
             -command   => \&showOptions
         ],
         [
-            'command'  => " Exit (x)",
+            'command'  => ' Exit (x)',
             -underline => 2,
             -font      => $FONT,
             -command   => sub { exit }
         ]
     ]
 )->pack( -side => 'left' );
+
 my $hmenu = $frame->Menubutton(
-    -text      => "Help",
+    -text      => 'Help',
     -underline => 0,
     -font      => $FONT,
     -tearoff   => 0,
     -menuitems => [
         [
-            'command'  => "Help",
+            'command'  => 'Help',
             -underline => 0,
             -font      => $FONT,
             -command   => \&showHelp
         ],
         [
-            'command'  => "About",
+            'command'  => 'About',
             -underline => 0,
             -font      => $FONT,
             -command   => \&showAbout
@@ -86,23 +89,14 @@ my $canvas = $MW->Canvas(
 
 setup();
 
-$MW->repeat( 15, \&tick );
+$MW->repeat( $TICK_DELAY, \&tick );
 
 MainLoop;
 
-#   $canvas->createOval(x1, y1, x2, y2, ?option, value, option, value, ...?)
-
-#    x1, y1, x2, y2, ?option, value, option, value, ...?)
-
 package Circle;
 
-# BEHAVIORS
-# wrap - when reaches end-of-screen, goes to the other side
-# bounce - when reaches end-of-screen, changes direction
-
 sub new {
-    my $class   = shift;
-    my %options = @_;
+    my ( $class, %options ) = @_;
 
     my $dir_x = $options{dir_x} || 0;
     my $dir_y = $options{dir_y} || 0;
@@ -129,30 +123,24 @@ sub new {
     return $this;
 }
 
-sub go_some_damn_place {
-    my $self    = shift;
-    my %options = @_;
-
-    my $x = $options{x} || 10;
-    my $y = $options{y} || 10;
-    print "id is $self->{id}\n";
-    print "canvas is $canvas\n";
-    my $tick_id = $MW->after( 50, sub { $self->move( $x, $y ) } );
-}
-
 sub set_in_motion {
-    my $self = shift;
+    my ( $self ) = @_;
 
-    my $dir_x = rand(6) - 3;
-    my $dir_y = rand(6) - 3;
+    my $RANGE_OF_MOTION = 3;
+    my $dir_x = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
+    my $dir_y = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
 
     $self->{dir_x} = $dir_x;
     $self->{dir_y} = $dir_y;
+
+    return;
 }
 
 sub go {
     my $self = shift;
     $self->move( $self->{dir_x}, $self->{dir_y} );
+
+    return;
 }
 
 sub go_random {
@@ -162,27 +150,35 @@ sub go_random {
     my $dir_y = rand(6) - 3;
 
     $self->move( $dir_x, $dir_y );
+
+    return;
 }
 
 sub go_right {
     my $self = shift;
     $self->move( 1, 0 );
+
+    return;
 }
 
 sub go_down_and_right {
     my $self = shift;
     $self->move( 1, 1 );
+
+    return;
 }
 
 sub go_up_and_left {
     my $self = shift;
     $self->move( -1, -1 );
+
+    return;
 }
 
 sub move {
-    my $self = shift;
+    my ( $self, @args ) = @_;
 
-    $canvas->move( $self->{id}, @_ );
+    $canvas->move( $self->{id}, @args );
 
     my ( $x1, $y1, $x2, $y2 ) = $canvas->coords( $self->{id} );
 
@@ -236,20 +232,19 @@ sub move {
             $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
         }
     }
+
+    return;
 }
 
-sub reset {
+sub location_reset {
     my $self = shift;
-
-    #    print "start_x1 $self->{start_x1}\n";
-    #    print "start_y1 $self->{start_y1}\n";
-    #    print "start_x2 $self->{start_x2}\n";
-    #    print "start_y2 $self->{start_y2}\n";
 
     $canvas->coords(
         $self->{id},       $self->{start_x1}, $self->{start_y1},
         $self->{start_x2}, $self->{start_y2},
     );
+
+    return;
 }
 
 1;
