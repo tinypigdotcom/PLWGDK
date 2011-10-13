@@ -15,77 +15,84 @@ use Data::Dumper;
 
 our $SCR_WIDTH  = 500;
 our $SCR_HEIGHT = 500;
-our $FONT       = 'Arial 8 normal';
+our $RANGE_OF_MOTION = 3;
+our $canvas;
 
 my $TICK_DELAY = 15;
+my $MW;
 
-my $MW = MainWindow->new;
-$MW->title('Lesson');
+sub create_main_window {
+    $MW = MainWindow->new;
+    $MW->title('Lesson');
 
-my $frame = $MW->Frame(
-    -relief      => 'ridge',
-    -borderwidth => 2
-  )->pack(
-    -side   => 'top',
-    -anchor => 'n',
-    -fill   => 'x'
-  );
+    my $frame = $MW->Frame(
+        -relief      => 'ridge',
+        -borderwidth => 2
+      )->pack(
+        -side   => 'top',
+        -anchor => 'n',
+        -fill   => 'x'
+      );
 
-my $menu = $frame->Menubutton(
-    -text      => 'File',
-    -underline => 0,
-    -font      => $FONT,
-    -tearoff   => 0,
-    -menuitems => [
-        [
-            'command'  => ' New (n)',
-            -underline => 1,
-            -font      => $FONT,
-            -command   => \&startGame
-        ],
-        [
-            'command'  => ' Options',
-            -underline => 1,
-            -font      => $FONT,
-            -command   => \&showOptions
-        ],
-        [
-            'command'  => ' Exit (x)',
-            -underline => 2,
-            -font      => $FONT,
-            -command   => sub { exit }
+    my $FONT       = 'Arial 8 normal';
+    my $menu = $frame->Menubutton(
+        -text      => 'File',
+        -underline => 0,
+        -font      => $FONT,
+        -tearoff   => 0,
+        -menuitems => [
+            [
+                'command'  => ' New (n)',
+                -underline => 1,
+                -font      => $FONT,
+                -command   => \&startGame
+            ],
+            [
+                'command'  => ' Options',
+                -underline => 1,
+                -font      => $FONT,
+                -command   => \&showOptions
+            ],
+            [
+                'command'  => ' Exit (x)',
+                -underline => 2,
+                -font      => $FONT,
+                -command   => sub { exit }
+            ]
         ]
-    ]
-)->pack( -side => 'left' );
+    )->pack( -side => 'left' );
 
-my $hmenu = $frame->Menubutton(
-    -text      => 'Help',
-    -underline => 0,
-    -font      => $FONT,
-    -tearoff   => 0,
-    -menuitems => [
-        [
-            'command'  => 'Help',
-            -underline => 0,
-            -font      => $FONT,
-            -command   => \&showHelp
-        ],
-        [
-            'command'  => 'About',
-            -underline => 0,
-            -font      => $FONT,
-            -command   => \&showAbout
+    my $hmenu = $frame->Menubutton(
+        -text      => 'Help',
+        -underline => 0,
+        -font      => $FONT,
+        -tearoff   => 0,
+        -menuitems => [
+            [
+                'command'  => 'Help',
+                -underline => 0,
+                -font      => $FONT,
+                -command   => \&showHelp
+            ],
+            [
+                'command'  => 'About',
+                -underline => 0,
+                -font      => $FONT,
+                -command   => \&showAbout
+            ]
         ]
-    ]
-)->pack( -side => 'left' );
+    )->pack( -side => 'left' );
 
-my $canvas = $MW->Canvas(
-    -width      => $main::SCR_WIDTH,
-    -height     => $main::SCR_HEIGHT,
-    -border     => 1,
-    -relief     => 'ridge',
-    -background => 'black'
-)->pack();
+    $canvas = $MW->Canvas(
+        -width      => $SCR_WIDTH,
+        -height     => $SCR_HEIGHT,
+        -border     => 1,
+        -relief     => 'ridge',
+        -background => 'black'
+    )->pack();
+}
+
+create_main_window();
 
 setup();
 
@@ -126,7 +133,6 @@ sub new {
 sub set_in_motion {
     my ( $self ) = @_;
 
-    my $RANGE_OF_MOTION = 3;
     my $dir_x = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
     my $dir_y = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
 
@@ -146,8 +152,8 @@ sub go {
 sub go_random {
     my $self = shift;
 
-    my $dir_x = rand(6) - 3;
-    my $dir_y = rand(6) - 3;
+    my $dir_x = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
+    my $dir_y = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
 
     $self->move( $dir_x, $dir_y );
 
