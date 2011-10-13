@@ -1,7 +1,7 @@
 
 PLWGDK - Perl Light-Weight Game Development Kit
-===============================================
-
+-----------------------------------------------
+---
 This is a framework I am creating to teach my children how to program.
 It is my hope that it will become something others can use as well.
 
@@ -35,6 +35,7 @@ Clone ideas
 Components
 ----------
 A complete learning solution should include:
+
 * Full documentation
     * lessons in text / text & images / video formats
     * full API documentation
@@ -47,6 +48,7 @@ My Learning Goals
 -----------------
 Peripheral things it might be appropriate for me to learn during this
 process:
+
 * Git
 * Github
 * Moose
