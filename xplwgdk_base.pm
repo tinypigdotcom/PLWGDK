@@ -39,6 +39,20 @@ $canvas = $mw->new_tk__canvas(
 );
 $canvas->g_pack();
 
+setup();
+
+sub repeat {
+    my $ms  = shift;
+    my $sub = shift;
+    my $repeater; # repeat wrapper
+
+    $repeater = sub { $sub->(@_); Tkx::after($ms, $repeater); };
+
+    Tkx::after($ms, $repeater);
+}
+
+repeat( $TICK_DELAY, \&tick );
+
 Tkx::MainLoop();
 exit;
 
@@ -114,14 +128,8 @@ sub about {
     );
 }
 
+
 package Circle;
-
-sub new { return bless { } }
-sub set_in_motion { }
-sub go { }
-sub go_random { }
-
-package xCircle;
 
 sub new {
     my ( $class, %options ) = @_;
@@ -138,7 +146,7 @@ sub new {
     my $x2 = $x1 + $size;
     my $y2 = $y1 + $size;
 
-    my $circleID = $canvas->createOval( $x1, $y1, $x2, $y2, -fill => $color, );
+    my $circleID = $canvas->create_oval( $x1, $y1, $x2, $y2, -fill => $color, );
 
     my $this = bless {
         'id'        => $circleID,
@@ -163,6 +171,7 @@ sub set_in_motion {
     return;
 }
 
+
 sub go {
     my $self = shift;
     $self->move( $self->{dir_x}, $self->{dir_y} );
@@ -181,33 +190,12 @@ sub go_random {
     return;
 }
 
-sub go_right {
-    my $self = shift;
-    $self->move( 1, 0 );
-
-    return;
-}
-
-sub go_down_and_right {
-    my $self = shift;
-    $self->move( 1, 1 );
-
-    return;
-}
-
-sub go_up_and_left {
-    my $self = shift;
-    $self->move( -1, -1 );
-
-    return;
-}
-
 sub move {
     my ( $self, @args ) = @_;
 
     $canvas->move( $self->{id}, @args );
 
-    my ( $x1, $y1, $x2, $y2 ) = $canvas->coords( $self->{id} );
+    my ( $x1, $y1, $x2, $y2 ) = $self->coords( );
 
     if ( $self->{is_bouncy} ) {
         if ( $x2 > $SCR_WIDTH and $self->{dir_x} > 0 ) {
@@ -232,7 +220,7 @@ sub move {
             $y2 = $y2;
             $x1 = $x2 - $self->{size};
             $y1 = $y2 - $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
 
         if ( $y1 > $SCR_HEIGHT ) {
@@ -240,7 +228,7 @@ sub move {
             $y2 = 1;
             $x1 = $x2 - $self->{size};
             $y1 = $y2 - $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
 
         if ( $x2 < 0 ) {
@@ -248,7 +236,7 @@ sub move {
             $y1 = $y1;
             $x2 = $x1 + $self->{size};
             $y2 = $y1 + $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
 
         if ( $y2 < 0 ) {
@@ -256,22 +244,17 @@ sub move {
             $y1 = $SCR_HEIGHT;
             $x2 = $x1 + $self->{size};
             $y2 = $y1 + $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
     }
 
     return;
 }
 
-sub location_reset {
-    my $self = shift;
+sub coords {
+    my ($self, @args) = @_;
 
-    $canvas->coords(
-        $self->{id},       $self->{start_x1}, $self->{start_y1},
-        $self->{start_x2}, $self->{start_y2},
-    );
-
-    return;
+    return split /\s+/, $canvas->coords( $self->{id}, @args );
 }
 
 1;
