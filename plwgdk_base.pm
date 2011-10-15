@@ -6,11 +6,9 @@ use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
-
 use Carp;
-use Tk;
-use Tk::Dialog;
+use Tkx;
+#use Tk::Dialog;
 use Data::Dumper;
 
 our $SCR_WIDTH  = 500;
@@ -21,84 +19,115 @@ our $canvas;
 my $TICK_DELAY = 15;
 my $MW;
 
-sub create_main_window {
-    $MW = MainWindow->new;
-    $MW->title('Lesson');
+our $VERSION = "0.02";
 
-    my $frame = $MW->Frame(
-        -relief      => 'ridge',
-        -borderwidth => 2
-      )->pack(
-        -side   => 'top',
-        -anchor => 'n',
-        -fill   => 'x'
-      );
+(my $progname = $0) =~ s,.*[\\/],,;
+my $IS_AQUA = Tkx::tk_windowingsystem() eq "aqua";
 
-    my $FONT       = 'Arial 8 normal';
-    my $menu = $frame->Menubutton(
-        -text      => 'File',
-        -underline => 0,
-        -font      => $FONT,
-        -tearoff   => 0,
-        -menuitems => [
-            [
-                'command'  => ' New (n)',
-                -underline => 1,
-                -font      => $FONT,
-                -command   => \&startGame
-            ],
-            [
-                'command'  => ' Options',
-                -underline => 1,
-                -font      => $FONT,
-                -command   => \&showOptions
-            ],
-            [
-                'command'  => ' Exit (x)',
-                -underline => 2,
-                -font      => $FONT,
-                -command   => sub { exit }
-            ]
-        ]
-    )->pack( -side => 'left' );
+Tkx::package_require("style");
+Tkx::style__use("as", -priority => 70);
 
-    my $hmenu = $frame->Menubutton(
-        -text      => 'Help',
-        -underline => 0,
-        -font      => $FONT,
-        -tearoff   => 0,
-        -menuitems => [
-            [
-                'command'  => 'Help',
-                -underline => 0,
-                -font      => $FONT,
-                -command   => \&showHelp
-            ],
-            [
-                'command'  => 'About',
-                -underline => 0,
-                -font      => $FONT,
-                -command   => \&showAbout
-            ]
-        ]
-    )->pack( -side => 'left' );
+my $mw = Tkx::widget->new(".");
+$mw->configure(-menu => mk_menu($mw));
 
-    $canvas = $MW->Canvas(
-        -width      => $SCR_WIDTH,
-        -height     => $SCR_HEIGHT,
-        -border     => 1,
-        -relief     => 'ridge',
-        -background => 'black'
-    )->pack();
-}
-
-create_main_window();
+$canvas = $mw->new_tk__canvas(
+    -width      => $SCR_WIDTH,
+    -height     => $SCR_HEIGHT,
+    -border     => 1,
+    -relief     => 'ridge',
+    -background => 'black'
+);
+$canvas->g_pack();
 
 setup();
 
-$MW->repeat( $TICK_DELAY, \&tick );
+sub repeat {
+    my $ms  = shift;
+    my $sub = shift;
+    my $repeater; # repeat wrapper
 
-MainLoop;
+    $repeater = sub { $sub->(@_); Tkx::after($ms, $repeater); };
+
+    Tkx::after($ms, $repeater);
+}
+
+repeat( $TICK_DELAY, \&tick );
+
+Tkx::MainLoop();
+exit;
+
+sub mk_menu {
+    my $mw = shift;
+    my $menu = $mw->new_menu;
+
+    my $file = $menu->new_menu(
+        -tearoff => 0,
+    );
+    $menu->add_cascade(
+        -label => "File",
+        -underline => 0,
+        -menu => $file,
+    );
+    $file->add_command(
+        -label => "New",
+        -underline => 0,
+        -accelerator => "Ctrl+N",
+        -command => \&new,
+    );
+    $mw->g_bind("<Control-n>", \&new);
+    $file->add_command(
+        -label   => "Exit",
+        -underline => 1,
+        -command => [\&Tkx::destroy, $mw],
+    ) unless $IS_AQUA;
+
+    my $help = $menu->new_menu(
+        -name => "help",
+        -tearoff => 0,
+    );
+    $menu->add_cascade(
+        -label => "Help",
+        -underline => 0,
+        -menu => $help,
+    );
+    $help->add_command(
+        -label => "\u$progname Manual",
+        -command => \&show_manual,
+    );
+
+    my $about_menu = $help;
+    if ($IS_AQUA) {
+        # On Mac OS we want about box to appear in the application
+        # menu.  Anything added to a menu with the name "apple" will
+        # appear in this menu.
+        $about_menu = $menu->new_menu(
+            -name => "apple",
+        );
+        $menu->add_cascade(
+            -menu => $about_menu,
+        );
+    }
+    $about_menu->add_command(
+        -label => "About \u$progname",
+        -command => \&about,
+    );
+
+    return $menu;
+}
+
+
+sub about {
+    Tkx::tk___messageBox(
+        -parent => $mw,
+        -title => "About \u$progname",
+        -type => "ok",
+        -icon => "info",
+        -message => "$progname v$VERSION\n" .
+                    "Copyright 2005 ActiveState. " .
+                    "All rights reserved.",
+    );
+}
+
 
 package Circle;
 
@@ -117,7 +146,7 @@ sub new {
     my $x2 = $x1 + $size;
     my $y2 = $y1 + $size;
 
-    my $circleID = $canvas->createOval( $x1, $y1, $x2, $y2, -fill => $color, );
+    my $circleID = $canvas->create_oval( $x1, $y1, $x2, $y2, -fill => $color, );
 
     my $this = bless {
         'id'        => $circleID,
@@ -142,6 +171,7 @@ sub set_in_motion {
     return;
 }
 
+
 sub go {
     my $self = shift;
     $self->move( $self->{dir_x}, $self->{dir_y} );
@@ -160,33 +190,12 @@ sub go_random {
     return;
 }
 
-sub go_right {
-    my $self = shift;
-    $self->move( 1, 0 );
-
-    return;
-}
-
-sub go_down_and_right {
-    my $self = shift;
-    $self->move( 1, 1 );
-
-    return;
-}
-
-sub go_up_and_left {
-    my $self = shift;
-    $self->move( -1, -1 );
-
-    return;
-}
-
 sub move {
     my ( $self, @args ) = @_;
 
     $canvas->move( $self->{id}, @args );
 
-    my ( $x1, $y1, $x2, $y2 ) = $canvas->coords( $self->{id} );
+    my ( $x1, $y1, $x2, $y2 ) = $self->coords( );
 
     if ( $self->{is_bouncy} ) {
         if ( $x2 > $SCR_WIDTH and $self->{dir_x} > 0 ) {
@@ -211,7 +220,7 @@ sub move {
             $y2 = $y2;
             $x1 = $x2 - $self->{size};
             $y1 = $y2 - $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
 
         if ( $y1 > $SCR_HEIGHT ) {
@@ -219,7 +228,7 @@ sub move {
             $y2 = 1;
             $x1 = $x2 - $self->{size};
             $y1 = $y2 - $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
 
         if ( $x2 < 0 ) {
@@ -227,7 +236,7 @@ sub move {
             $y1 = $y1;
             $x2 = $x1 + $self->{size};
             $y2 = $y1 + $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
 
         if ( $y2 < 0 ) {
@@ -235,22 +244,17 @@ sub move {
             $y1 = $SCR_HEIGHT;
             $x2 = $x1 + $self->{size};
             $y2 = $y1 + $self->{size};
-            $canvas->coords( $self->{id}, $x1, $y1, $x2, $y2, );
+            $self->coords( $x1, $y1, $x2, $y2, );
         }
     }
 
     return;
 }
 
-sub location_reset {
-    my $self = shift;
+sub coords {
+    my ($self, @args) = @_;
 
-    $canvas->coords(
-        $self->{id},       $self->{start_x1}, $self->{start_y1},
-        $self->{start_x2}, $self->{start_y2},
-    );
-
-    return;
+    return split /\s+/, $canvas->coords( $self->{id}, @args );
 }
 
 1;
@@ -302,5 +306,103 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.1 or,
 at your option, any later version of Perl 5 you may have available.
 
-=cut
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sub create_main_window {
+    $MW = Tkx::widget->new('.');
+    $MW->g_wm_title('Lesson');
+
+    my $frame = $MW->new_frame(
+        -relief      => 'ridge',
+        -borderwidth => 2
+    );
+
+    $frame->g_pack(
+        -side   => 'top',
+        -anchor => 'n',
+        -fill   => 'x'
+    );
+
+
+    my $FONT       = 'Arial 8 normal';
+
+    $MW->configure(-menu => mk_menu($MW));
+
+#    my $menu = $frame->Menubutton(
+#        -text      => 'File',
+#        -underline => 0,
+#        -font      => $FONT,
+#        -tearoff   => 0,
+#        -menuitems => [
+#            [
+#                'command'  => ' New (n)',
+#                -underline => 1,
+#                -font      => $FONT,
+#                -command   => \&startGame
+#            ],
+#            [
+#                'command'  => ' Options',
+#                -underline => 1,
+#                -font      => $FONT,
+#                -command   => \&showOptions
+#            ],
+#            [
+#                'command'  => ' Exit (x)',
+#                -underline => 2,
+#                -font      => $FONT,
+#                -command   => sub { exit }
+#            ]
+#        ]
+#    )->pack( -side => 'left' );
+#
+#    my $hmenu = $frame->Menubutton(
+#        -text      => 'Help',
+#        -underline => 0,
+#        -font      => $FONT,
+#        -tearoff   => 0,
+#        -menuitems => [
+#            [
+#                'command'  => 'Help',
+#                -underline => 0,
+#                -font      => $FONT,
+#                -command   => \&showHelp
+#            ],
+#            [
+#                'command'  => 'About',
+#                -underline => 0,
+#                -font      => $FONT,
+#                -command   => \&showAbout
+#            ]
+#        ]
+#    )->pack( -side => 'left' );
+
+#    $canvas = $MW->Canvas(
+#        -width      => $SCR_WIDTH,
+#        -height     => $SCR_HEIGHT,
+#        -border     => 1,
+#        -relief     => 'ridge',
+#        -background => 'black'
+#    )->pack();
+}
+
+create_main_window();
+
+setup();
+
+#$MW->repeat( $TICK_DELAY, \&tick );
+
+
+=cut
