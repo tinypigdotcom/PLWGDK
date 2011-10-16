@@ -19,12 +19,14 @@
 
 sub setup {
     # do setup stuff here
-    $thingies{circle1} = Square->new();
+    $thingies{circle1} = Square->new(
+        is_bouncy => 1,
+    );
 
-    $thingies{circle2} = Square->new(
+    $thingies{circle2} = Triangle->new(
         x     => 250,
         y     => 290,
-        size  => 40,
+        size  => 60,
         color => 'red',
         is_bouncy => 1,
     );
@@ -32,8 +34,9 @@ sub setup {
     $thingies{circle3} = Circle->new(
         x         => 250,
         y         => 250,
-        size      => 50,
+        size      => 90,
         color     => 'purple',
+        is_bouncy => 1,
     );
     $thingies{circle1}->set_in_motion();
     $thingies{circle2}->set_in_motion();
