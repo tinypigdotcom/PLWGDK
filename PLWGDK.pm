@@ -1,5 +1,6 @@
-#!/usr/local/bin/perl
+package PLWGDK;
 
+# NO CODE SHOULD RUN AS A RESULT OF "USE"
 # Documentation at end
 
 use 5.010001;
@@ -11,35 +12,43 @@ use Tkx;
 #use Tk::Dialog;
 use Data::Dumper;
 
-our $SCR_WIDTH  = 500;
-our $SCR_HEIGHT = 500;
-our $RANGE_OF_MOTION = 3;
-our $canvas;
-
-my $TICK_DELAY = 15;
-my $MW;
-
 our $VERSION = "0.02";
 
-(my $progname = $0) =~ s,.*[\\/],,;
-my $IS_AQUA = Tkx::tk_windowingsystem() eq "aqua";
+our $SCR_WIDTH;
+our $SCR_HEIGHT;
+our $RANGE_OF_MOTION;
+our $TICK_DELAY;
+our $IS_AQUA;
+our $progname;
+our $mw;
+our $canvas;
 
-Tkx::package_require("style");
-Tkx::style__use("as", -priority => 70);
+sub my_game_init {
+    my ( $class, %options ) = @_;
 
-my $mw = Tkx::widget->new(".");
-$mw->configure(-menu => mk_menu($mw));
+    $SCR_WIDTH  = 500;
+    $SCR_HEIGHT = 500;
+    $RANGE_OF_MOTION = 3;
+    $TICK_DELAY = 15;
 
-$canvas = $mw->new_tk__canvas(
-    -width      => $SCR_WIDTH,
-    -height     => $SCR_HEIGHT,
-    -border     => 1,
-    -relief     => 'ridge',
-    -background => 'black'
-);
-$canvas->g_pack();
+    ($progname = $0) =~ s,.*[\\/],,;
+    $IS_AQUA = Tkx::tk_windowingsystem() eq "aqua";
 
-setup();
+    Tkx::package_require("style");
+    Tkx::style__use("as", -priority => 70);
+
+    $mw = Tkx::widget->new(".");
+    $mw->configure(-menu => mk_menu($mw));
+
+    $canvas = $mw->new_tk__canvas(
+        -width      => $SCR_WIDTH,
+        -height     => $SCR_HEIGHT,
+        -border     => 1,
+        -relief     => 'ridge',
+        -background => 'black'
+    );
+    $canvas->g_pack();
+}
 
 sub repeat {
     my $ms  = shift;
@@ -50,11 +59,6 @@ sub repeat {
 
     Tkx::after($ms, $repeater);
 }
-
-repeat( $TICK_DELAY, \&tick );
-
-Tkx::MainLoop();
-exit;
 
 sub mk_menu {
     my $mw = shift;
@@ -128,10 +132,35 @@ sub about {
     );
 }
 
+package Thingie;
+use Moose;
 
-package Circle;
+has 'dir_x'     => ( isa => 'Num',   is => 'rw',  default =>  0       );
+has 'dir_y'     => ( isa => 'Num',   is => 'rw',  default =>  0       );
+has 'x'         => ( isa => 'Int',   is => 'rw',  default => 10       );
+has 'y'         => ( isa => 'Int',   is => 'rw',  default => 10       );
+has 'size'      => ( isa => 'Int',   is => 'rw',  default => 30       );
+has 'id'        => ( isa => 'Int',   is => 'rw',                      );
+has 'is_bouncy' => ( isa => 'Bool',  is => 'rw',  default =>  0       );
+has 'color'     => ( isa => 'Str',   is => 'rw',  default => 'yellow' );
 
-sub new {
+sub BUILD {
+    my ( $self, $params ) = @_;
+
+    my $x2 = $self->{x} + $self->{size};
+    my $y2 = $self->{y} + $self->{size};
+
+#    $self->{id} = $canvas->create_oval(
+    $self->{id} = $canvas->create_rectangle(
+        $self->{x},
+        $self->{y},
+        $x2,
+        $y2,
+        -fill => $self->{color},
+    );
+}
+
+sub xnew {
     my ( $class, %options ) = @_;
 
     my $dir_x = $options{dir_x} || 0;
@@ -257,6 +286,17 @@ sub coords {
     return split /\s+/, $canvas->coords( $self->{id}, @args );
 }
 
+
+package Circle;
+use Moose;
+
+extends 'Thingie';
+
+package Square;
+use Moose;
+
+extends 'Thingie';
+
 1;
 __END__
 
@@ -305,104 +345,5 @@ Copyright (C) 2011 by David Bradford
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.1 or,
 at your option, any later version of Perl 5 you may have available.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-sub create_main_window {
-    $MW = Tkx::widget->new('.');
-    $MW->g_wm_title('Lesson');
-
-    my $frame = $MW->new_frame(
-        -relief      => 'ridge',
-        -borderwidth => 2
-    );
-
-    $frame->g_pack(
-        -side   => 'top',
-        -anchor => 'n',
-        -fill   => 'x'
-    );
-
-
-    my $FONT       = 'Arial 8 normal';
-
-    $MW->configure(-menu => mk_menu($MW));
-
-#    my $menu = $frame->Menubutton(
-#        -text      => 'File',
-#        -underline => 0,
-#        -font      => $FONT,
-#        -tearoff   => 0,
-#        -menuitems => [
-#            [
-#                'command'  => ' New (n)',
-#                -underline => 1,
-#                -font      => $FONT,
-#                -command   => \&startGame
-#            ],
-#            [
-#                'command'  => ' Options',
-#                -underline => 1,
-#                -font      => $FONT,
-#                -command   => \&showOptions
-#            ],
-#            [
-#                'command'  => ' Exit (x)',
-#                -underline => 2,
-#                -font      => $FONT,
-#                -command   => sub { exit }
-#            ]
-#        ]
-#    )->pack( -side => 'left' );
-#
-#    my $hmenu = $frame->Menubutton(
-#        -text      => 'Help',
-#        -underline => 0,
-#        -font      => $FONT,
-#        -tearoff   => 0,
-#        -menuitems => [
-#            [
-#                'command'  => 'Help',
-#                -underline => 0,
-#                -font      => $FONT,
-#                -command   => \&showHelp
-#            ],
-#            [
-#                'command'  => 'About',
-#                -underline => 0,
-#                -font      => $FONT,
-#                -command   => \&showAbout
-#            ]
-#        ]
-#    )->pack( -side => 'left' );
-
-#    $canvas = $MW->Canvas(
-#        -width      => $SCR_WIDTH,
-#        -height     => $SCR_HEIGHT,
-#        -border     => 1,
-#        -relief     => 'ridge',
-#        -background => 'black'
-#    )->pack();
-}
-
-create_main_window();
-
-setup();
-
-#$MW->repeat( $TICK_DELAY, \&tick );
-
 
 =cut
