@@ -17,7 +17,7 @@ our $VERSION = "0.02";
 our $SCR_WIDTH;
 our $SCR_HEIGHT;
 our $RANGE_OF_MOTION;
-our $DEBUG_MOTION_MULTIPLIER = 0;
+our $DEBUG_MOTION_MULTIPLIER = 8;
 our $TICK_DELAY;
 our $IS_AQUA;
 our $progname;
@@ -30,7 +30,7 @@ sub my_game_init {
     $SCR_WIDTH  = 500;
     $SCR_HEIGHT = 500;
     $RANGE_OF_MOTION = 3;
-    $TICK_DELAY = 15;
+    $TICK_DELAY = 50;
 
     ($progname = $0) =~ s,.*[\\/],,;
     $IS_AQUA = Tkx::tk_windowingsystem() eq "aqua";
@@ -235,6 +235,28 @@ sub move {
     return;
 }
 
+sub reset_coords {
+    my ( $self, $basis ) = @_;
+
+    if ( $basis eq 'x2' ) {
+        $self->x1( $self->x2 - $self->size );
+        $self->y1( $self->y2 - $self->size );
+    }
+    elsif ( $basis eq 'y2') {
+        $self->x1( $self->x2 - $self->size );
+        $self->y1( $self->y2 - $self->size );
+    }
+    elsif ( $basis eq 'x1' ) {
+        $self->x2( $self->x1 + $self->size );
+        $self->y2( $self->y1 + $self->size );
+    }
+    elsif ( $basis eq 'y1' ) {
+        $self->x2( $self->x1 + $self->size );
+        $self->y2( $self->y1 + $self->size );
+    }
+    $self->_coords( $self->x1, $self->y1, $self->x2, $self->y2 );
+}
+
 sub _coords {
     my ($self, @args) = @_;
 
@@ -270,28 +292,6 @@ sub calc_coords {
     $self->y2( $self->y1 + $self->size );
 }
 
-sub reset_coords {
-    my ( $self, $basis ) = @_;
-
-    if ( $basis eq 'x2' ) {
-        $self->x1( $self->x2 - $self->size );
-        $self->y1( $self->y2 - $self->size );
-    }
-    elsif ( $basis eq 'y2') {
-        $self->x1( $self->x2 - $self->size );
-        $self->y1( $self->y2 - $self->size );
-    }
-    elsif ( $basis eq 'x1' ) {
-        $self->x2( $self->x1 + $self->size );
-        $self->y2( $self->y1 + $self->size );
-    }
-    elsif ( $basis eq 'y1' ) {
-        $self->x2( $self->x1 + $self->size );
-        $self->y2( $self->y1 + $self->size );
-    }
-    $self->_coords( $self->x1, $self->y1, $self->x2, $self->y2 );
-}
-
 
 package Square;
 use Moose;
@@ -321,28 +321,6 @@ sub calc_coords {
     $self->y2( $self->y1 + $self->size );
 }
 
-sub reset_coords {
-    my ( $self, $basis ) = @_;
-
-    if ( $basis eq 'x2' ) {
-        $self->x1( $self->x2 - $self->size );
-        $self->y1( $self->y2 - $self->size );
-    }
-    elsif ( $basis eq 'y2') {
-        $self->x1( $self->x2 - $self->size );
-        $self->y1( $self->y2 - $self->size );
-    }
-    elsif ( $basis eq 'x1' ) {
-        $self->x2( $self->x1 + $self->size );
-        $self->y2( $self->y1 + $self->size );
-    }
-    elsif ( $basis eq 'y1' ) {
-        $self->x2( $self->x1 + $self->size );
-        $self->y2( $self->y1 + $self->size );
-    }
-    $self->_coords( $self->x1, $self->y1, $self->x2, $self->y2 );
-}
-
 
 package Triangle;
 use Moose;
@@ -366,6 +344,52 @@ sub BUILD {
         -fill => $self->color,
     );
 }
+
+sub _coords {
+    my ($self, @args) = @_;
+
+    my @coords;
+    my @retvals;
+
+    my $ix1 = 0;
+    my $iy1 = 1;
+    my $ix2 = 2;
+    my $iy2 = 3;
+    my $ix3 = 4;
+    my $iy3 = 5;
+
+    my $x1;
+    my $y1;
+    my $x2;
+    my $y2;
+    my $x3;
+    my $y3;
+
+#print "args" . $#args . "\n";
+    if($#args >= 0) {
+        $x1 = $args[$ix1] + ($self->size/2);
+        $y1 = $args[$iy1];
+        $x2 = $args[$ix1] + $self->size;
+        $y2 = $args[$iy1] + $self->size;
+        $x3 = $args[$ix1];
+        $y3 = $args[$iy1] + $self->size;
+        @coords = split /\s+/, $canvas->coords( $self->ID,
+            $x1, $y1, $x2, $y2, $x3, $y3
+        );
+    }
+    else {
+        @coords = split /\s+/, $canvas->coords( $self->ID, @args );
+        $x1 = $coords[$ix3];
+        $y1 = $coords[$iy1];
+        $x2 = $coords[$ix2];
+        $y2 = $coords[$iy2];
+
+        @retvals = ($x1, $y1, $x2, $y2);
+    }
+
+    return @retvals;
+}
+
 
 
 1;
