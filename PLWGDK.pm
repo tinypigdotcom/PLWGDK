@@ -17,6 +17,7 @@ our $VERSION = "0.02";
 our $SCR_WIDTH;
 our $SCR_HEIGHT;
 our $RANGE_OF_MOTION;
+our $DEBUG_MOTION_MULTIPLIER = 0;
 our $TICK_DELAY;
 our $IS_AQUA;
 our $progname;
@@ -135,75 +136,33 @@ sub about {
 package Thingie;
 use Moose;
 
-has 'dir_x'     => ( isa => 'Num',   is => 'rw',  default =>  0       );
-has 'dir_y'     => ( isa => 'Num',   is => 'rw',  default =>  0       );
-has 'x'         => ( isa => 'Int',   is => 'rw',  default => 10       );
-has 'y'         => ( isa => 'Int',   is => 'rw',  default => 10       );
-has 'size'      => ( isa => 'Int',   is => 'rw',  default => 30       );
-has 'id'        => ( isa => 'Int',   is => 'rw',                      );
-has 'is_bouncy' => ( isa => 'Bool',  is => 'rw',  default =>  0       );
-has 'color'     => ( isa => 'Str',   is => 'rw',  default => 'yellow' );
-
-sub BUILD {
-    my ( $self, $params ) = @_;
-
-    my $x2 = $self->{x} + $self->{size};
-    my $y2 = $self->{y} + $self->{size};
-
-#    $self->{id} = $canvas->create_oval(
-    $self->{id} = $canvas->create_rectangle(
-        $self->{x},
-        $self->{y},
-        $x2,
-        $y2,
-        -fill => $self->{color},
-    );
-}
-
-sub xnew {
-    my ( $class, %options ) = @_;
-
-    my $dir_x = $options{dir_x} || 0;
-    my $dir_y = $options{dir_y} || 0;
-
-    my $x1        = $options{x}         || 10;
-    my $y1        = $options{y}         || 10;
-    my $size      = $options{size}      || 30;
-    my $color     = $options{color}     || 'yellow';
-    my $is_bouncy = $options{is_bouncy} || 0;
-
-    my $x2 = $x1 + $size;
-    my $y2 = $y1 + $size;
-
-    my $circleID = $canvas->create_oval( $x1, $y1, $x2, $y2, -fill => $color, );
-
-    my $this = bless {
-        'id'        => $circleID,
-        'size'      => $size,
-        'dir_x'     => $dir_x,
-        'dir_y'     => $dir_y,
-        'is_bouncy' => $is_bouncy,
-    }, $class;
-
-    return $this;
-}
+has 'dir_x'     => ( isa => 'Num',           is => 'rw',  default =>  0       );
+has 'dir_y'     => ( isa => 'Num',           is => 'rw',  default =>  0       );
+has 'x1'        => ( isa => 'Num',           is => 'rw',  default => 10       );
+has 'y1'        => ( isa => 'Num',           is => 'rw',  default => 10       );
+has 'x2'        => ( isa => 'Num',           is => 'rw',                      );
+has 'y2'        => ( isa => 'Num',           is => 'rw',                      );
+has 'coords'    => ( isa => 'ArrayRef[Int]', is => 'rw',                      );
+has 'size'      => ( isa => 'Int',           is => 'rw',  default => 30       );
+has 'ID'        => ( isa => 'Int',           is => 'rw',                      );
+has 'is_bouncy' => ( isa => 'Bool',          is => 'rw',  default =>  0       );
+has 'color'     => ( isa => 'Str',           is => 'rw',  default => 'yellow' );
 
 sub set_in_motion {
     my ( $self ) = @_;
 
-    my $dir_x = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
-    my $dir_y = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION;
+    my $dir_x = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION + $DEBUG_MOTION_MULTIPLIER;
+    my $dir_y = rand($RANGE_OF_MOTION * 2) - $RANGE_OF_MOTION + $DEBUG_MOTION_MULTIPLIER;
 
-    $self->{dir_x} = $dir_x;
-    $self->{dir_y} = $dir_y;
+    $self->dir_x($dir_x);
+    $self->dir_y($dir_y);
 
     return;
 }
 
-
 sub go {
     my $self = shift;
-    $self->move( $self->{dir_x}, $self->{dir_y} );
+    $self->move( $self->dir_x, $self->dir_y );
 
     return;
 }
@@ -222,68 +181,64 @@ sub go_random {
 sub move {
     my ( $self, @args ) = @_;
 
-    $canvas->move( $self->{id}, @args );
+    $canvas->move( $self->ID, @args );
 
-    my ( $x1, $y1, $x2, $y2 ) = $self->coords( );
+    my $x1 = 0;
+    my $y1 = 1;
+    my $x2 = 2;
+    my $y2 = 3;
+    my ( @coords ) = $self->_coords();
 
-    if ( $self->{is_bouncy} ) {
-        if ( $x2 > $SCR_WIDTH and $self->{dir_x} > 0 ) {
-            $self->{dir_x} = -$self->{dir_x};
+    if ( $self->is_bouncy ) {
+        if ( $coords[$x2] > $SCR_WIDTH and $self->dir_x > 0 ) {
+            $self->dir_x( -$self->dir_x );
         }
 
-        if ( $y2 > $SCR_HEIGHT and $self->{dir_y} > 0 ) {
-            $self->{dir_y} = -$self->{dir_y};
+        if ( $coords[$y2] > $SCR_HEIGHT and $self->dir_y > 0 ) {
+            $self->dir_y( -$self->dir_y );
         }
 
-        if ( $x1 < 0 and $self->{dir_x} < 0 ) {
-            $self->{dir_x} = -$self->{dir_x};
+        if ( $coords[$x1] < 0 and $self->dir_x < 0 ) {
+            $self->dir_x( -$self->dir_x );
         }
 
-        if ( $y1 < 0 and $self->{dir_y} < 0 ) {
-            $self->{dir_y} = -$self->{dir_y};
+        if ( $coords[$y1] < 0 and $self->dir_y < 0 ) {
+            $self->dir_y( -$self->dir_y );
         }
     }
     else {
-        if ( $x1 > $SCR_WIDTH ) {
-            $x2 = 1;
-            $y2 = $y2;
-            $x1 = $x2 - $self->{size};
-            $y1 = $y2 - $self->{size};
-            $self->coords( $x1, $y1, $x2, $y2, );
+        if ( $coords[$x1] > $SCR_WIDTH ) {
+            $self->x2( 1 );
+            $self->y2( $coords[$y2] );
+            $self->reset_coords('x2');
         }
 
-        if ( $y1 > $SCR_HEIGHT ) {
-            $x2 = $x2;
-            $y2 = 1;
-            $x1 = $x2 - $self->{size};
-            $y1 = $y2 - $self->{size};
-            $self->coords( $x1, $y1, $x2, $y2, );
+        if ( $coords[$y1] > $SCR_HEIGHT ) {
+            $self->y2( 1 );
+            $self->x2( $coords[$x2] );
+            $self->reset_coords('y2');
         }
 
-        if ( $x2 < 0 ) {
-            $x1 = $SCR_WIDTH;
-            $y1 = $y1;
-            $x2 = $x1 + $self->{size};
-            $y2 = $y1 + $self->{size};
-            $self->coords( $x1, $y1, $x2, $y2, );
+        if ( $coords[$x2] < 0 ) {
+            $self->x1( $SCR_WIDTH );
+            $self->y1( $coords[$y1] );
+            $self->reset_coords('x1');
         }
 
-        if ( $y2 < 0 ) {
-            $x1 = $x1;
-            $y1 = $SCR_HEIGHT;
-            $x2 = $x1 + $self->{size};
-            $y2 = $y1 + $self->{size};
-            $self->coords( $x1, $y1, $x2, $y2, );
+        if ( $coords[$y2] < 0 ) {
+            $self->y1( $SCR_HEIGHT );
+            $self->x1( $coords[$x1] );
+            $self->reset_coords('y1');
         }
     }
 
     return;
 }
 
-sub coords {
+sub _coords {
     my ($self, @args) = @_;
 
-    return split /\s+/, $canvas->coords( $self->{id}, @args );
+    return split /\s+/, $canvas->coords( $self->ID, @args );
 }
 
 
@@ -292,10 +247,126 @@ use Moose;
 
 extends 'Thingie';
 
+sub BUILD {
+    my ( $self, $params ) = @_;
+
+    $self->calc_coords();
+
+    $self->ID(
+        $canvas->create_oval(
+            $self->x1,
+            $self->y1,
+            $self->x2,
+            $self->y2,
+            -fill => $self->color,
+        )
+    );
+}
+
+sub calc_coords {
+    my ( $self, $params ) = @_;
+
+    $self->x2( $self->x1 + $self->size );
+    $self->y2( $self->y1 + $self->size );
+}
+
+sub reset_coords {
+    my ( $self, $basis ) = @_;
+
+    if ( $basis eq 'x2' ) {
+        $self->x1( $self->x2 - $self->size );
+        $self->y1( $self->y2 - $self->size );
+    }
+    elsif ( $basis eq 'y2') {
+        $self->x1( $self->x2 - $self->size );
+        $self->y1( $self->y2 - $self->size );
+    }
+    elsif ( $basis eq 'x1' ) {
+        $self->x2( $self->x1 + $self->size );
+        $self->y2( $self->y1 + $self->size );
+    }
+    elsif ( $basis eq 'y1' ) {
+        $self->x2( $self->x1 + $self->size );
+        $self->y2( $self->y1 + $self->size );
+    }
+    $self->_coords( $self->x1, $self->y1, $self->x2, $self->y2 );
+}
+
+
 package Square;
 use Moose;
 
 extends 'Thingie';
+
+sub BUILD {
+    my ( $self, $params ) = @_;
+
+    $self->calc_coords();
+
+    $self->ID(
+        $canvas->create_rectangle(
+            $self->x1,
+            $self->y1,
+            $self->x2,
+            $self->y2,
+            -fill => $self->color,
+        )
+    );
+}
+
+sub calc_coords {
+    my ( $self, $params ) = @_;
+
+    $self->x2( $self->x1 + $self->size );
+    $self->y2( $self->y1 + $self->size );
+}
+
+sub reset_coords {
+    my ( $self, $basis ) = @_;
+
+    if ( $basis eq 'x2' ) {
+        $self->x1( $self->x2 - $self->size );
+        $self->y1( $self->y2 - $self->size );
+    }
+    elsif ( $basis eq 'y2') {
+        $self->x1( $self->x2 - $self->size );
+        $self->y1( $self->y2 - $self->size );
+    }
+    elsif ( $basis eq 'x1' ) {
+        $self->x2( $self->x1 + $self->size );
+        $self->y2( $self->y1 + $self->size );
+    }
+    elsif ( $basis eq 'y1' ) {
+        $self->x2( $self->x1 + $self->size );
+        $self->y2( $self->y1 + $self->size );
+    }
+    $self->_coords( $self->x1, $self->y1, $self->x2, $self->y2 );
+}
+
+
+package Triangle;
+use Moose;
+
+extends 'Thingie';
+
+sub BUILD {
+    my ( $self, $params ) = @_;
+
+    my $x1 = $self->x1 + ($self->size/2);
+    my $y1 = $self->y1;
+    my $x2 = $self->x1 + $self->size;
+    my $y2 = $self->y1 + $self->size;
+    my $x3 = $self->x1;
+    my $y3 = $self->y1 + $self->size;
+
+    $self->{ID} = $canvas->create_poly(
+        $x1, $y1,
+        $x2, $y2,
+        $x3, $y3,
+        -fill => $self->color,
+    );
+}
+
 
 1;
 __END__

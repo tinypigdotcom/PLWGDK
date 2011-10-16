@@ -21,11 +21,12 @@ sub setup {
     # do setup stuff here
     $thingies{circle1} = Square->new();
 
-    $thingies{circle2} = Circle->new(
+    $thingies{circle2} = Square->new(
         x     => 250,
         y     => 290,
         size  => 40,
         color => 'red',
+        is_bouncy => 1,
     );
 
     $thingies{circle3} = Circle->new(
@@ -33,7 +34,6 @@ sub setup {
         y         => 250,
         size      => 50,
         color     => 'purple',
-        is_bouncy => 1,
     );
     $thingies{circle1}->set_in_motion();
     $thingies{circle2}->set_in_motion();
@@ -44,6 +44,7 @@ sub tick {
     # do one step of game stuff
     $thingies{circle1}->go();
     $thingies{circle2}->go();
+    $thingies{circle3}->go();
     $thingies{circle3}->go_random();
 }
 
